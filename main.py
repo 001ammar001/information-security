@@ -12,13 +12,13 @@ def handle_client(client_socket):
             data = client_socket.recv(1)
             if not data:
                 break
-            new_user = User(user_name='john_doe',
-                            password='securepassword', balance=100.0
-                            )
-            DataBaseHandeler.get_session().add(new_user)
             client_socket.sendall(data)
-            DataBaseHandeler.get_session().commit()
-            
+
+        new_user = User(user_name='john_doe',
+                        password='securepassword', balance=100.0
+                        )
+        User.create_user(new_user)
+        
         print(f"Connection closed by {client_socket.getpeername()}")
 
 
