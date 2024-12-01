@@ -1,12 +1,13 @@
 import socket
 import threading
+from time import sleep
 
 
 def handle_client(client_socket):
     with client_socket:
         print(f"Connected by {client_socket.getpeername()}")
         while True:
-            data = client_socket.recv(1024)
+            data = client_socket.recv(1)
             if not data:
                 break
             client_socket.sendall(data)
