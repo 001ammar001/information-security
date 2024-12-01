@@ -1,24 +1,23 @@
 import socket
 import threading
-from time import sleep
 from models import User
-from database import DataBaseHandeler
+import json
 
 
-def handle_client(client_socket):
+def handle_client(client_socket: socket.socket):
     with client_socket:
         print(f"Connected by {client_socket.getpeername()}")
-        while True:
-            data = client_socket.recv(1)
-            if not data:
-                break
-            client_socket.sendall(data)
+        data = client_socket.recv(2048)
+        data = json.loads(data)
+        if (data.get("action") == 2):
+            user = User(
+                user_name=data.get("user_name"),
+                password=data.get("password"),
+                balance=0
+            )
+            result = User.create_user(user)
+            client_socket.sendall(result.encode())
 
-        new_user = User(user_name='john_doe',
-                        password='securepassword', balance=100.0
-                        )
-        User.create_user(new_user)
-        
         print(f"Connection closed by {client_socket.getpeername()}")
 
 
