@@ -16,6 +16,7 @@ def get_valid_number(message: str):
 
 class Client:
     ISLOGED_IN = False
+    SERVER_KEY = ""
 
     @staticmethod
     def get_auth_actions() -> int:
@@ -69,6 +70,7 @@ enter the action you want to do
         data = Client.get_response(conn)
         if (data.get("status") == "success"):
             Client.ISLOGED_IN = True
+            Client.SERVER_KEY = data.get("server_key").encode()
 
     @staticmethod
     def register(conn: socket.socket):
