@@ -77,9 +77,10 @@ class User(Base):
         print(user.balance)
         old_balance = decrypt(key=os.environ.get("AES_KEY").encode(),message=user.balance)
         user.balance = encrypt(key=os.environ.get("AES_KEY").encode(),message=(str(float(amount) + float(old_balance))).encode())
+        new_balance = decrypt(key=os.environ.get("AES_KEY").encode(),message=user.balance)
         session.commit()
         return json.dumps(
-            {'status': "success", 'message': f"balance update successfully {user.balance}"}
+            {'status': "success", 'message': f"balance update successfully {new_balance}"}
         )
 
     @staticmethod

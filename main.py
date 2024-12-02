@@ -4,7 +4,7 @@ from models import User
 import json
 from asymmetric_crypt import encrypt
 from dotenv import load_dotenv
-
+from key_generate import generate_rsa_key_pair
 load_dotenv()
 
 users_keys= {
@@ -51,7 +51,6 @@ def encrypt_with_user_key(data: str,username):
         print("key is",key)
         print(type(key),type(data))
         print(data)
-        data = "hi there"
         return encrypt(key.encode(),data.encode())
  
 
@@ -89,4 +88,10 @@ def start_server(host='127.0.0.1', port=3000):
 
 
 if __name__ == "__main__":
+    # keys = generate_rsa_key_pair()
+    # key = keys[1].decode()
+    # users_keys["amr"] = key
+    # message = json.dumps({"message": "hi there","status": "success", "name":"amro"})
+    # enc = encrypt_with_user_key(message,"amr")
+    # print(enc)
     start_server()
