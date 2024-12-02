@@ -40,11 +40,13 @@ def client_deposit(client_socket: socket.socket, data: dict):
 
 def client_withdraw(client_socket: socket.socket, data: dict):
     result = User.withdraw(data.get("user_id"), float(data.get("amount")))
-    client_socket.sendall(result.encode())
+    result = encrypt_with_user_key(result,User.get_username(data.get("user_id")))
+    client_socket.sendall(result)
 
 def get_client_balance(client_socket: socket.socket, data: dict):
     result = User.get_balance(data.get("user_id"))
-    client_socket.sendall(result.encode())
+    result = encrypt_with_user_key(result,User.get_username(data.get("user_id")))
+    client_socket.sendall(result)
 
 def encrypt_with_user_key(data: str,username):
         key = users_keys[username]
