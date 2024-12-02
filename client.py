@@ -1,10 +1,10 @@
 import socket
 import json
-
+from key_generate import generate_rsa_key_pair
 HOST = "127.0.0.1"
 PORT = 3000
 
-
+keys = None
 def get_valid_number(message: str):
     while True:
         try:
@@ -19,7 +19,6 @@ class Client:
 
     @staticmethod
     def get_auth_actions() -> int:
-        print(Client.ISLOGED_IN)
         try:
             action = int(input(
                 """
@@ -37,7 +36,6 @@ enter the action you want to do
 
     @staticmethod
     def get_actions() -> int:
-        print(Client.ISLOGED_IN)
         try:
             action = int(input(
                 """
@@ -64,8 +62,9 @@ enter the action you want to do
     def login(conn: socket.socket):
         name = input("user name: ")
         password = input("password: ")
+        keys = generate_rsa_key_pair()
         conn.sendall(json.dumps(
-            {'user_name': name, 'password': password, "action": 1}).encode()
+            {'user_name': name, 'password': password, "action": 1,"user_key": keys[1].decode() }).encode()
         )
         data = Client.get_response(conn)
         if (data.get("status") == "success"):

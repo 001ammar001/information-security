@@ -8,7 +8,7 @@ def generate_rsa_key_pair():
     public_key = key.publickey().export_key()
     return (private_key,public_key)
 
-def generate_ies_key():
+def generate_aes_key():
     key = "".join(random.choices(string.ascii_letters + string.digits,k=16))
     return key.encode()
 

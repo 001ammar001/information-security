@@ -1,5 +1,6 @@
 from Crypto.Cipher import  PKCS1_OAEP
 from Crypto.PublicKey import RSA
+from key_generate import generate_rsa_key_pair
 
 def encrypt(public_key, message ):    
     cipher_rsa = PKCS1_OAEP.new(public_key)
@@ -13,10 +14,10 @@ def decrypt(private_key,message):
     dec_message = cipher_rsa.decrypt(message)
     return dec_message
 
-recipient_key = RSA.import_key(open("receiver.pem").read())
-private_key = RSA.import_key(open("private.pem").read())
+private_key,recipient_key = generate_rsa_key_pair() 
 
 if __name__ == "__main__":
     print(recipient_key)
-    print(encrypted := encrypt(recipient_key,b"abdullah"))
+    print(encrypted := encrypt(recipient_key.encode(),b"abdullah"))
     print(decrypt(private_key,encrypted))
+

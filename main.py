@@ -2,13 +2,23 @@ import socket
 import threading
 from models import User
 import json
+from asymmetric_crypt import encrypt
+from dotenv import load_dotenv
 
+load_dotenv()
+
+users_keys= {
+
+}
 
 def client_login(client_socket: socket.socket, data: dict):
     result = User.login(
         user_name=data.get("user_name"),
         password=data.get("password"),
     )
+    users_keys[data.get("user_name")] = data.get("user_key")
+    print("data",data)
+    print(users_keys[data.get("user_name")])
     client_socket.sendall(result.encode())
 
 
@@ -24,7 +34,8 @@ def client_register(client_socket: socket.socket, data: dict):
 
 def client_deposit(client_socket: socket.socket, data: dict):
     result = User.deposit(data.get("user_id"), float(data.get("amount")))
-    client_socket.sendall(result.encode())
+    result = encrypt_with_user_key(result,User.get_username(data.get("user_id")))
+    client_socket.sendall(result)
 
 
 def client_withdraw(client_socket: socket.socket, data: dict):
@@ -35,6 +46,13 @@ def get_client_balance(client_socket: socket.socket, data: dict):
     result = User.get_balance(data.get("user_id"))
     client_socket.sendall(result.encode())
 
+def encrypt_with_user_key(data: str,username):
+        key = users_keys[username]
+        print("key is",key)
+        print(type(key),type(data))
+        print(data)
+        return encrypt(key,b"data.encode()")
+   
 
 def handle_client(client_socket: socket.socket):
     with client_socket:
@@ -42,7 +60,7 @@ def handle_client(client_socket: socket.socket):
         data = client_socket.recv(2048)
         data = json.loads(data)
         action = data.get("action")
-
+ 
         if (action == 1):
             client_login(client_socket, data)
         if (action == 2):
@@ -55,7 +73,6 @@ def handle_client(client_socket: socket.socket):
             get_client_balance(client_socket, data)
 
         print(f"Connection closed by {client_socket.getpeername()}")
-
 
 def start_server(host='127.0.0.1', port=3000):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -71,5 +88,4 @@ def start_server(host='127.0.0.1', port=3000):
 
 
 if __name__ == "__main__":
-    
     start_server()
