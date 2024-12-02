@@ -1,6 +1,7 @@
 import socket
 import json
 from key_generate import generate_rsa_key_pair
+from asymmetric_crypt import decrypt,encrypt
 HOST = "127.0.0.1"
 PORT = 3000
 
@@ -57,17 +58,21 @@ enter the action you want to do
     def get_response(conn: socket.socket):
         data = conn.recv(2048)
         print(data)
-        return json.loads(data)
+        dec_data = decrypt(keys[0].decode(), data)
+        return json.loads(dec_data)
 
     @staticmethod
     def login(conn: socket.socket):
         name = input("user name: ")
         password = input("password: ")
+        global keys
         keys = generate_rsa_key_pair()
         conn.sendall(json.dumps(
             {'user_name': name, 'password': password, "action": 1,"user_key": keys[1].decode() }).encode()
         )
-        data = Client.get_response(conn)
+        data2 = conn.recv(2048)
+        print(data2)
+        data = json.loads(data2)
         if (data.get("status") == "success"):
             Client.ISLOGED_IN = True
             Client.SERVER_KEY = data.get("server_key").encode()
