@@ -18,6 +18,6 @@ private_key,recipient_key = generate_rsa_key_pair()
 
 if __name__ == "__main__":
     print(recipient_key)
-    print(encrypted := encrypt(recipient_key.encode(),b"abdullah"))
+    print(encrypted := encrypt(recipient_key,b"abdullah"))
     print(decrypt(private_key,encrypted))
 

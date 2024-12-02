@@ -6,6 +6,8 @@ def generate_rsa_key_pair():
     key = RSA.generate(1024)
     private_key = key.export_key()
     public_key = key.publickey().export_key()
+    private_key = RSA.import_key(private_key)
+    public_key = RSA.import_key(public_key)
     return (private_key,public_key)
 
 def generate_aes_key():
