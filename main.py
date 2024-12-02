@@ -51,8 +51,9 @@ def encrypt_with_user_key(data: str,username):
         print("key is",key)
         print(type(key),type(data))
         print(data)
-        return encrypt(key,b"data.encode()")
-   
+        data = "hi there"
+        return encrypt(key.encode(),data.encode())
+ 
 
 def handle_client(client_socket: socket.socket):
     with client_socket:

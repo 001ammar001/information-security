@@ -10,8 +10,8 @@ rsa_pair = generate_rsa_key_pair()
 aes_key = generate_aes_key()
 
 KEYS = {
-    "RSA_PUBLIC_KEY": rsa_pair[0],
-    "RSA_PRIVATE_KEY": rsa_pair[1],
+    "RSA_PRIVATE_KEY": rsa_pair[0],
+    "RSA_PUBLIC_KEY": rsa_pair[1],
     "AES_KEY": aes_key,
 }
 
