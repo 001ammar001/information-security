@@ -2,24 +2,33 @@ import socket
 import threading
 from models import User
 import json
-from asymmetric_crypt import encrypt
+from asymmetric_crypt import encrypt,decrypt
 from dotenv import load_dotenv
-from key_generate import generate_rsa_key_pair
+from uuid import uuid4
+import os
 load_dotenv()
 
-users_keys= {
+users_keys= { }
 
-}
+def client_exchange_key(client:socket.socket, data: dict):
+    session = str(uuid4())
+    users_keys[session] = {"public_key": data["personal"], "user_id": None}
+    data = {
+        "session_id": session, "server_key": os.environ.get("RSA_PUBLIC_KEY")
+    }
+    client.sendall(json.dumps(data).encode())
+
 
 def client_login(client_socket: socket.socket, data: dict):
     result = User.login(
         user_name=data.get("user_name"),
         password=data.get("password"),
     )
-    users_keys[data.get("user_name")] = data.get("user_key")
-    print("data",data)
-    print(users_keys[data.get("user_name")])
-    client_socket.sendall(result.encode())
+    if result["status"] == "success":
+        users_keys[data.get("session_id")]["user_id"] = result["user_id"]
+    result = json.dumps(result)
+    result = encrypt(users_keys[data["session_id"]]["public_key"].encode(),result.encode())
+    client_socket.sendall(result)
 
 
 def client_register(client_socket: socket.socket, data: dict):
@@ -29,40 +38,50 @@ def client_register(client_socket: socket.socket, data: dict):
         balance="0"
     )
     result = User.create_user(user)
-    client_socket.sendall(result.encode())
+    result = json.dumps(result)
+    result = encrypt(users_keys[data["session_id"]]["public_key"].encode(),result.encode())
+    client_socket.sendall(result)
 
 
 def client_deposit(client_socket: socket.socket, data: dict):
     result = User.deposit(data.get("user_id"), float(data.get("amount")))
-    result = encrypt_with_user_key(result,User.get_username(data.get("user_id")))
+    result = json.dumps(result)
+    result = encrypt(users_keys[data["session_id"]]["public_key"].encode(),result.encode())
     client_socket.sendall(result)
 
 
 def client_withdraw(client_socket: socket.socket, data: dict):
     result = User.withdraw(data.get("user_id"), float(data.get("amount")))
-    result = encrypt_with_user_key(result,User.get_username(data.get("user_id")))
+    result = json.dumps(result)
+    result = encrypt(users_keys[data["session_id"]]["public_key"].encode(),result.encode())
     client_socket.sendall(result)
 
 def get_client_balance(client_socket: socket.socket, data: dict):
     result = User.get_balance(data.get("user_id"))
-    result = encrypt_with_user_key(result,User.get_username(data.get("user_id")))
+    result = json.dumps(result)
+    result = encrypt(users_keys[data["session_id"]]["public_key"].encode(),result.encode())
     client_socket.sendall(result)
 
-def encrypt_with_user_key(data: str,username):
-        key = users_keys[username]
-        print("key is",key)
-        print(type(key),type(data))
-        print(data)
-        return encrypt(key.encode(),data.encode())
- 
 
 def handle_client(client_socket: socket.socket):
     with client_socket:
         print(f"Connected by {client_socket.getpeername()}")
         data = client_socket.recv(2048)
-        data = json.loads(data)
+        
+        try:
+            data = json.loads(data)
+        except ValueError:
+            data = decrypt(
+                private_key=os.environ.get("RSA_PRIVATE_KEY").encode(),
+                message= data
+                )
+            print(data)
+            data = json.loads(data)
+            
         action = data.get("action")
- 
+        print("action: ", action," data: ",data)
+        if (action == 0):
+            client_exchange_key(client_socket,data)
         if (action == 1):
             client_login(client_socket, data)
         if (action == 2):

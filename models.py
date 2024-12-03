@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import hashlib
-import json
 import os
 from dotenv import load_dotenv
 from symmetric_crypt import encrypt,decrypt
@@ -46,15 +45,13 @@ class User(Base):
                 session=session, user_name=user.user_name
             )
         except ValueError:
-            return json.dumps(
-                {'status': "error", 'message': "Username has already been taken"}
-            )
-
+            return {'status': "error", 'message': "Username has already been taken"}
+            
+        user.balance = encrypt(os.environ.get("AES_KEY").encode(),user.balance.encode())
         session.add(user)
         session.commit()
-        return json.dumps(
-            {'status': "success", 'message': "User created successfully"}
-        )
+        return {'status': "success", 'message': "User created successfully"}
+        
 
     @staticmethod
     def login(user_name: str, password: str):
@@ -62,44 +59,39 @@ class User(Base):
         user = session.query(User).filter_by(user_name=user_name).first()
 
         if (not user or User._hash_password(password) != user.password):
-            return json.dumps(
-                {'status': "error", 'message': "User does not exists"}
-            )
+            return  {'status': "error", 'message': "User does not exists"}
+            
 
-        return json.dumps(
-            {'status': "success", 'message': "user login successfully","server_key": os.environ.get("RSA_PUBLIC_KEY")}
-        )
+        return  {'status': "success", 'message': "user login successfully","user_id": user.user_id}
 
     @staticmethod
     def deposit(user_id, amount):
         session = DataBaseHandeler.get_session()
         user = session.query(User).filter_by(user_id=user_id).first()
         old_balance = decrypt(key=os.environ.get("AES_KEY").encode(),message=user.balance)
-        user.balance = encrypt(key=os.environ.get("AES_KEY").encode(),message=(str(float(amount) + float(old_balance))).encode())
-        new_balance = decrypt(key=os.environ.get("AES_KEY").encode(),message=user.balance)
+        new_balance = (str(float(amount) + float(old_balance)))
+        user.balance = encrypt(key=os.environ.get("AES_KEY").encode(),message= new_balance.encode())
         session.commit()
-        return json.dumps(
-            {'status': "success", 'message': f"balance update successfully {new_balance.decode()}"}
-        )
+        return {'status': "success", 'message': f"balance update successfully {new_balance}"}
+        
 
     @staticmethod
     def withdraw(user_id, amount):
         session = DataBaseHandeler.get_session()
         user = session.query(User).filter_by(user_id=user_id).first()
         old_balance = decrypt(key=os.environ.get("AES_KEY").encode(),message=user.balance)
-        # TODO: we need to decrypt the value before doing the calculation
+
         if (float(old_balance) >= float(amount)):
-            user.balance = encrypt(key=os.environ.get("AES_KEY").encode(),message=str(float(old_balance) - float(amount)).encode())
+            new_balance = str(float(old_balance) - float(amount))
+            user.balance = encrypt(key=os.environ.get("AES_KEY").encode(),message= new_balance.encode())
             session.commit()
-            new_balance = decrypt(key=os.environ.get("AES_KEY").encode(),message=user.balance)
-            return json.dumps(
-                {'status': "success",
-                    'message': f"balance update successfully {new_balance.decode()}"}
-            )
-        new_balance = decrypt(key=os.environ.get("AES_KEY").encode(),message=user.balance)
-        return json.dumps(
-            {'status': "error", 'message': f"insufficient balance {new_balance.decode()}"}
-        )
+            return {'status': "success",
+                    'message': f"balance update successfully {new_balance}"
+                    }
+            
+        new_balance = old_balance
+        return {'status': "error", 'message': f"insufficient balance {new_balance.decode()}"}
+        
 
     @staticmethod
     def get_balance(user_id: int):
@@ -108,15 +100,11 @@ class User(Base):
         balance = decrypt(key=os.environ.get("AES_KEY").encode(),message=user.balance)
 
         if (not user):
-            return json.dumps(
-                {'status': "error", 'message': "User does not exists"}
-            )
+            return {'status': "error", 'message': "User does not exists"}
+            
 
-        return json.dumps(
-            {'status': "success", 'message': f"your balance is {balance.decode()}"}
-        )
-
-
+        return {'status': "success", 'message': f"your balance is {balance.decode()}"}
+        
     
 
 Base.metadata.create_all(DataBaseHandeler.get_connection())

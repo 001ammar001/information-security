@@ -5,7 +5,7 @@ from asymmetric_crypt import decrypt,encrypt
 HOST = "127.0.0.1"
 PORT = 3000
 
-keys = None
+keys = "key"
 def get_valid_number(message: str):
     while True:
         try:
@@ -16,8 +16,10 @@ def get_valid_number(message: str):
 
 
 class Client:
-    ISLOGED_IN = False
+    SESSION_ID = None
+    IS_LOGGEDIN = False
     SERVER_KEY = ""
+    PERSONAL_KEYS = {}
 
     @staticmethod
     def get_auth_actions() -> int:
@@ -57,33 +59,44 @@ enter the action you want to do
     @staticmethod
     def get_response(conn: socket.socket):
         data = conn.recv(2048)
-        print(data)
-        dec_data = decrypt(keys[0].decode(), data)
+        dec_data = decrypt(Client.PERSONAL_KEYS["private"], data)
         return json.loads(dec_data)
+
+    @staticmethod
+    def key_exchange(conn: socket.socket):
+        private, public = generate_rsa_key_pair()
+        Client.PERSONAL_KEYS["private"],Client.PERSONAL_KEYS["public"] = private.decode(), public.decode()
+        conn.sendall(json.dumps({
+            "action": 0,
+            "personal": Client.PERSONAL_KEYS["public"] 
+        }).encode())
+        data = conn.recv(2048)
+        data = json.loads(data)
+        Client.SESSION_ID = data["session_id"]
+        Client.SERVER_KEY = data["server_key"]
 
     @staticmethod
     def login(conn: socket.socket):
         name = input("user name: ")
         password = input("password: ")
-        global keys
-        keys = generate_rsa_key_pair()
-        conn.sendall(json.dumps(
-            {'user_name': name, 'password': password, "action": 1,"user_key": keys[1].decode() }).encode()
-        )
-        data2 = conn.recv(2048)
-        print(data2)
-        data = json.loads(data2)
-        if (data.get("status") == "success"):
-            Client.ISLOGED_IN = True
-            Client.SERVER_KEY = data.get("server_key").encode()
+        data = encrypt(Client.SERVER_KEY.encode(),json.dumps({
+            'user_name': name, 'password': password, "action": 1,"session_id": Client.SESSION_ID
+        }).encode())
+        conn.sendall(data)
+
+        response = Client.get_response(conn)
+        
+        if (response.get("status") == "success"):
+            Client.IS_LOGGEDIN = True
 
     @staticmethod
     def register(conn: socket.socket):
         name = input("user name: ")
         password = input("password: ")
-        conn.sendall(json.dumps(
-            {'user_name': name, 'password': password, "action": 2}).encode()
-        )
+        data = encrypt(Client.SERVER_KEY.encode(),json.dumps({
+            'user_name': name, 'password': password, "action": 2,"session_id": Client.SESSION_ID
+        }).encode())
+        conn.sendall(data)
         Client.get_response(conn)
 
     @staticmethod
@@ -92,16 +105,16 @@ enter the action you want to do
         # TODO: make user id dynamic
         user_id = 1
         conn.sendall(json.dumps(
-            {'user_id': user_id, 'amount': amount, "action": 3}).encode()
+            {'user_id': user_id, 'amount': amount, "action": 3, "session_id": Client.SESSION_ID}).encode()
         )
-        Client.get_response(conn)
+        result = Client.get_response(conn)
 
     @staticmethod
     def withdraw(conn: socket.socket):
         amount = get_valid_number("enter the amount you want to withdraw: ")
         user_id = 1
         conn.sendall(json.dumps(
-            {'user_id': user_id, 'amount': amount, "action": 4}).encode()
+            {'user_id': user_id, 'amount': amount, "action": 4, "session_id": Client.SESSION_ID}).encode()
         )
         Client.get_response(conn)
 
@@ -110,7 +123,7 @@ enter the action you want to do
     def show_balance(conn: socket.socket):
         user_id = 1
         conn.sendall(json.dumps(
-            {'user_id': user_id, "action": 5}).encode()
+            {'user_id': user_id, "action": 5, "session_id": Client.SESSION_ID}).encode()
         )
         Client.get_response(conn)
 
@@ -121,7 +134,7 @@ enter the action you want to do
         if action == 2:
             Client.register(conn)
 
-        if action > 2 and not Client.ISLOGED_IN:
+        if action > 2 and not Client.IS_LOGGEDIN:
             print("Method not allowd")
             return
 
@@ -137,7 +150,11 @@ enter the action you want to do
         while True:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
                 connection.connect((HOST, PORT))
-                if Client.ISLOGED_IN:
+                if not Client.PERSONAL_KEYS or not Client.SERVER_KEY:
+                    Client.key_exchange(connection) 
+                    continue
+                    
+                if Client.IS_LOGGEDIN:
                     action = Client.get_actions()
                 else:
                     action = Client.get_auth_actions()
