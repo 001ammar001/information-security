@@ -5,7 +5,6 @@ from asymmetric_crypt import decrypt,encrypt
 HOST = "127.0.0.1"
 PORT = 3000
 
-keys = "key"
 def get_valid_number(message: str):
     while True:
         try:
@@ -103,25 +102,31 @@ enter the action you want to do
     @staticmethod
     def deposit(conn: socket.socket):
         amount = get_valid_number("enter the amount you want to deposit: ")
-        conn.sendall(json.dumps(
-            {'amount': amount, "action": 3, "session_id": Client.SESSION_ID}).encode()
-        )
-        result = Client.get_response(conn)
+        data = encrypt(Client.SERVER_KEY.encode(),json.dumps({
+            'amount': amount, "action": 3, "session_id": Client.SESSION_ID
+            }).encode())
+        
+        conn.sendall(data)
+        Client.get_response(conn)
 
     @staticmethod
     def withdraw(conn: socket.socket):
         amount = get_valid_number("enter the amount you want to withdraw: ")
-        conn.sendall(json.dumps(
-            {'amount': amount, "action": 4, "session_id": Client.SESSION_ID}).encode()
-        )
+        data = encrypt(Client.SERVER_KEY.encode(),json.dumps({
+            'amount': amount, "action": 4, "session_id": Client.SESSION_ID
+            }).encode())
+        
+        conn.sendall(data)
         Client.get_response(conn)
 
 
     @staticmethod
     def show_balance(conn: socket.socket):
-        conn.sendall(json.dumps(
-            {"action": 5, "session_id": Client.SESSION_ID}).encode()
-        )
+        data = encrypt(Client.SERVER_KEY.encode(),json.dumps({
+            "action": 5, "session_id": Client.SESSION_ID
+            }).encode())
+        
+        conn.sendall(data)
         Client.get_response(conn)
 
     @staticmethod
