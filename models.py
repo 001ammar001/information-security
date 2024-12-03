@@ -62,7 +62,7 @@ class User(Base):
             return  {'status': "error", 'message': "User does not exists"}
             
 
-        return  {'status': "success", 'message': "user login successfully","user_id": user.user_id}
+        return  {'status': "success", 'message': "user login successfully, Welcome!","user_id": user.user_id}
 
     @staticmethod
     def deposit(user_id, amount):
