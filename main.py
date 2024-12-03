@@ -25,7 +25,7 @@ def client_login(client_socket: socket.socket, data: dict):
         password=data.get("password"),
     )
     if result["status"] == "success":
-        users_keys[data.get("session_id")]["user_id"] = result["user_id"]
+        users_keys[data.get("session_id")]["user_id"] = int(result["user_id"])
     result = json.dumps(result)
     result = encrypt(users_keys[data["session_id"]]["public_key"].encode(),result.encode())
     client_socket.sendall(result)
@@ -44,20 +44,20 @@ def client_register(client_socket: socket.socket, data: dict):
 
 
 def client_deposit(client_socket: socket.socket, data: dict):
-    result = User.deposit(data.get("user_id"), float(data.get("amount")))
+    result = User.deposit(users_keys[data.get("session_id")]["user_id"], float(data.get("amount")))
     result = json.dumps(result)
     result = encrypt(users_keys[data["session_id"]]["public_key"].encode(),result.encode())
     client_socket.sendall(result)
 
 
 def client_withdraw(client_socket: socket.socket, data: dict):
-    result = User.withdraw(data.get("user_id"), float(data.get("amount")))
+    result = User.withdraw(users_keys[data.get("session_id")]["user_id"], float(data.get("amount")))
     result = json.dumps(result)
     result = encrypt(users_keys[data["session_id"]]["public_key"].encode(),result.encode())
     client_socket.sendall(result)
 
 def get_client_balance(client_socket: socket.socket, data: dict):
-    result = User.get_balance(data.get("user_id"))
+    result = User.get_balance(users_keys[data.get("session_id")]["user_id"])
     result = json.dumps(result)
     result = encrypt(users_keys[data["session_id"]]["public_key"].encode(),result.encode())
     client_socket.sendall(result)
@@ -75,7 +75,6 @@ def handle_client(client_socket: socket.socket):
                 private_key=os.environ.get("RSA_PRIVATE_KEY").encode(),
                 message= data
                 )
-            print(data)
             data = json.loads(data)
             
         action = data.get("action")

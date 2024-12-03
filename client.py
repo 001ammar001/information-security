@@ -60,7 +60,8 @@ enter the action you want to do
     def get_response(conn: socket.socket):
         data = conn.recv(2048)
         dec_data = decrypt(Client.PERSONAL_KEYS["private"], data)
-        return json.loads(dec_data)
+        print("Response",dec_data := json.loads(dec_data))
+        return dec_data
 
     @staticmethod
     def key_exchange(conn: socket.socket):
@@ -102,28 +103,24 @@ enter the action you want to do
     @staticmethod
     def deposit(conn: socket.socket):
         amount = get_valid_number("enter the amount you want to deposit: ")
-        # TODO: make user id dynamic
-        user_id = 1
         conn.sendall(json.dumps(
-            {'user_id': user_id, 'amount': amount, "action": 3, "session_id": Client.SESSION_ID}).encode()
+            {'amount': amount, "action": 3, "session_id": Client.SESSION_ID}).encode()
         )
         result = Client.get_response(conn)
 
     @staticmethod
     def withdraw(conn: socket.socket):
         amount = get_valid_number("enter the amount you want to withdraw: ")
-        user_id = 1
         conn.sendall(json.dumps(
-            {'user_id': user_id, 'amount': amount, "action": 4, "session_id": Client.SESSION_ID}).encode()
+            {'amount': amount, "action": 4, "session_id": Client.SESSION_ID}).encode()
         )
         Client.get_response(conn)
 
 
     @staticmethod
     def show_balance(conn: socket.socket):
-        user_id = 1
         conn.sendall(json.dumps(
-            {'user_id': user_id, "action": 5, "session_id": Client.SESSION_ID}).encode()
+            {"action": 5, "session_id": Client.SESSION_ID}).encode()
         )
         Client.get_response(conn)
 
